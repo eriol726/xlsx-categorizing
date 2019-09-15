@@ -1,4 +1,4 @@
-# NyhetssajtApp
+# Xlsx categorizing
 Work in progress ...
 
 <img src="sortXMLS.png" width="500"> 
