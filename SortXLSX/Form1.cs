@@ -1,15 +1,9 @@
 ﻿using ExcelDataReader;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using ExcelDataReader.Core;
 using GemBox.Spreadsheet;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
@@ -39,7 +33,7 @@ namespace SortXLSX
         Category c = new Category();
         int categorySum = 0;
         int categoryIndex = 0;
-        int monthIndex = 7;
+        int monthIndex = 10;
         string spreadsheetId = ConfigurationManager.AppSettings["spreadsheetId"];
         string[] monthStrings = {"Januari", "Februari", "Mars", "April", "Maj", "Juni", "Juli", "Augusti", "September", "Oktober", "November", "December", "Summering" };
         public SpreadsheetsResource.ValuesResource.GetRequest request1;
@@ -48,244 +42,258 @@ namespace SortXLSX
         {
             using (OpenFileDialog ofd = new OpenFileDialog() { Filter = "Excel Workbook|*.xlsx", ValidateNames = true })
             {
-                //ofd.ShowDialog() == DialogResult.OK
-                if (true)
-                {
-                    FileStream fsYear = File.Open("Ekonomi_2019_downloaded.xlsx", FileMode.Open, FileAccess.Read);
-                    FileStream fsMonth = File.Open("seb_"+monthStrings[monthIndex]+".xlsx", FileMode.Open, FileAccess.Read);
-                    IExcelDataReader readerYear, readerMonth;
+
+                FileStream fsYear = File.Open("Ekonomi_2019_downloaded.xlsx", FileMode.Open, FileAccess.Read);
+                FileStream fsMonth = File.Open("Seb_"+monthStrings[monthIndex]+".xlsx", FileMode.Open, FileAccess.Read);
+                IExcelDataReader readerYear, readerMonth;
                     
-                    if (ofd.FilterIndex == 1)
+                if (ofd.FilterIndex == 1)
+                {
+                    readerYear = ExcelReaderFactory.CreateOpenXmlReader(fsYear);
+                    readerMonth = ExcelReaderFactory.CreateOpenXmlReader(fsMonth);
+                }
+                else
+                {
+                    readerYear = ExcelReaderFactory.CreateReader(fsYear);
+                    readerMonth = ExcelReaderFactory.CreateReader(fsMonth);
+                }
+
+
+                monthSet = readerMonth.AsDataSet(new ExcelDataSetConfiguration()
+                {
+                    ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
                     {
-                        readerYear = ExcelReaderFactory.CreateOpenXmlReader(fsYear);
-                        readerMonth = ExcelReaderFactory.CreateOpenXmlReader(fsMonth);
+                        UseHeaderRow = true
                     }
-                    else
-                    {
-                        readerYear = ExcelReaderFactory.CreateReader(fsYear);
-                        readerMonth = ExcelReaderFactory.CreateReader(fsMonth);
-                    }
+                });
+
+                yearSet = new DataSet();
+                DataTable monthTable = new DataTable("Januari");
+                yearSet.Tables.Add(monthTable);
+                monthTable = new DataTable("Februari");
+                yearSet.Tables.Add(monthTable);
+                monthTable = new DataTable("Mars");
+                yearSet.Tables.Add(monthTable);
+                monthTable = new DataTable("April");
+                yearSet.Tables.Add(monthTable);
+                monthTable = new DataTable("Maj");
+                yearSet.Tables.Add(monthTable);
+                monthTable = new DataTable("Juni");
+                yearSet.Tables.Add(monthTable);
+                monthTable = new DataTable("Juli");
+                yearSet.Tables.Add(monthTable);
+                monthTable = new DataTable("Augusti");
+                yearSet.Tables.Add(monthTable);
+                monthTable = new DataTable("September");
+                yearSet.Tables.Add(monthTable);
+                monthTable = new DataTable("Oktober");
+                yearSet.Tables.Add(monthTable);
+                monthTable = new DataTable("November");
+                yearSet.Tables.Add(monthTable);
+                monthTable = new DataTable("December");
+                yearSet.Tables.Add(monthTable);
+                monthTable = new DataTable("Summering");
+                yearSet.Tables.Add(monthTable);
 
 
-                    monthSet = readerMonth.AsDataSet(new ExcelDataSetConfiguration()
-                    {
-                        ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
-                        {
-                            UseHeaderRow = true
-                        }
-                    });
+                // remove unnecessary columns
+                DataTable dt = monthSet.Tables[0];
 
-                    //yearSet = readerYear.AsDataSet(new ExcelDataSetConfiguration()
-                    //{
-                    //    ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
-                    //    {
-                    //        UseHeaderRow = true
-                    //    }
-                    //});
-
-                    yearSet = new DataSet();
-                    DataTable monthTable = new DataTable("Januari");
-                    yearSet.Tables.Add(monthTable);
-                    monthTable = new DataTable("Februari");
-                    yearSet.Tables.Add(monthTable);
-                    monthTable = new DataTable("Mars");
-                    yearSet.Tables.Add(monthTable);
-                    monthTable = new DataTable("April");
-                    yearSet.Tables.Add(monthTable);
-                    monthTable = new DataTable("Maj");
-                    yearSet.Tables.Add(monthTable);
-                    monthTable = new DataTable("Juni");
-                    yearSet.Tables.Add(monthTable);
-                    monthTable = new DataTable("Juli");
-                    yearSet.Tables.Add(monthTable);
-                    monthTable = new DataTable("Augusti");
-                    yearSet.Tables.Add(monthTable);
-                    monthTable = new DataTable("September");
-                    yearSet.Tables.Add(monthTable);
-                    monthTable = new DataTable("Oktober");
-                    yearSet.Tables.Add(monthTable);
-                    monthTable = new DataTable("November");
-                    yearSet.Tables.Add(monthTable);
-                    monthTable = new DataTable("December");
-                    yearSet.Tables.Add(monthTable);
-                    monthTable = new DataTable("Summering");
-                    yearSet.Tables.Add(monthTable);
-
-
-                    // remove unnecessary columns
-                    DataTable dt = monthSet.Tables[0];  
-
+                if (monthIndex > 9)
+                {
+                    dt.Columns[3].Expression = "";
+                }
+                else
+                {
                     dt.Columns.Remove(dt.Columns[5]);
                     dt.Columns.Remove(dt.Columns[2]);
                     dt.Columns.Remove(dt.Columns[1]);
-                    monthSet.Tables[0].AcceptChanges();
+                }
 
-                    foreach (DataRow row in monthSet.Tables[0].Rows)
+                monthSet.Tables[0].AcceptChanges();
+
+                foreach (DataRow row in monthSet.Tables[0].Rows)
+                {
+                    string year = row[0].ToString();
+
+                    // remove rows with a an empty description
+                    if (row[1] == DBNull.Value)
                     {
-                        string year = row[0].ToString();
-
-                        // remove rows with a an empty description
-                        if (row[1] == DBNull.Value)
-                        {
-                            row.Delete();
-                        }
-                        //radera alla rader som inte börjar med ett datum
-                        else if(!year.ToString().Contains("2019") )
-                        {
-                            row.Delete();
-                        }
-                        else if(row[1].ToString().Contains("ISK"))
-                        {
-                            row.Delete();
-                        }
-                        else if (row[1].ToString().Contains("PREMIE FÖRS"))
-                        {
-                            row.Delete();
-                        }
-                        else if (Convert.ToInt32(row[2]) > 0)
-                        {
-                            row.Delete();
-                        }
+                        row.Delete();
                     }
+                    //radera alla rader som inte börjar med ett datum
+                    else if(!year.ToString().Contains("2019") )
+                    {
+                        row.Delete();
+                    }
+                    else if(row[1].ToString().Contains("ISK"))
+                    {
+                        row.Delete();
+                    }
+                    else if (row[1].ToString().Contains("PREMIE FÖRS"))
+                    {
+                        row.Delete();
+                    }
+                    else if (Convert.ToInt32(row[2]) > 0)
+                    {
+                        row.Delete();
+                    }
+                }
 
-                    //important to reorder table when we delete
-                    monthSet.Tables[0].AcceptChanges();
+                //important to reorder table when we delete
+                monthSet.Tables[0].AcceptChanges();
 
-                    categoryList.items = new List<Item>
-                          {
-                             new Item { title = "Hyra", sum = 0, annualSum = 0 },
-                             new Item { title = "Bredband/Mobil", sum = 0, annualSum = 0 },
-                             new Item { title = "Basutgifter", sum = 0, annualSum = 0 },
-                             new Item { title = "Mat", sum = 0, annualSum = 0 },
-                             new Item { title = "Sprit", sum = 0, annualSum = 0 },
-                             new Item { title = "Swish", sum = 0, annualSum = 0 },
-                             new Item { title = "Resor", sum = 0, annualSum = 0 },
-                             new Item { title = "Övrigt", sum = 0, annualSum = 0 }
-                          };
+                categoryList.items = new List<CategoryItem>
+                        {
+                            new CategoryItem { title = "Hyra", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Bredband/Mobil", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Basutgifter", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Mat", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Sprit", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Swish", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Resor", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Övrigt", sum = 0, annualSum = 0 }
+                        };
 
-                    // sumerize induvidual caregory
-                    monthSet.Tables[0].AcceptChanges();
-                    tempDataTable = monthSet.Tables[0].Clone();
+                // sumerize induvidual caregory
+                monthSet.Tables[0].AcceptChanges();
+                tempDataTable = monthSet.Tables[0].Clone();
 
-                    DataRow titleRow = tempDataTable.NewRow();
-                    DataRow emptyRow = tempDataTable.NewRow();
+                DataRow titleRow = tempDataTable.NewRow();
 
-                    var hyra = new List<string>() { "HYRES" };
-                    categorization(titleRow, emptyRow, hyra);
+                var hyra = new List<string>() { "HYRES" };
+                categorization(titleRow, hyra);
 
-                    var bredband = new List<string>() { "TELEN", "COMV" };
-                    categorization(titleRow, emptyRow, bredband);
+                var bredband = new List<string>() { "TELEN", "COMV" };
+                categorization(titleRow, bredband);
 
-                    var basutgifter = new List<string>() { "DFS", "SPOTIFY", "AEA", "SVEGOT", "WORLDCLASS", "ENKLA VARDAG", "CSN", "EON ", "E ON" };
-                    categorization(titleRow, emptyRow, basutgifter);
+                var basutgifter = new List<string>() { "DFS", "SPOTIFY", "AEA", "SVEGOT", "WORLDCLASS", "ENKLA VARDAG", "CSN", "EON ", "E ON" };
+                categorization(titleRow, basutgifter);
 
-                    var mat = new List<string>() { "COOP", "NETT", "ICA", "WILLYS", "LIDL", "SELECTA", "PIZZ", "PIZ", "VISUALISERIN", "ENOTEKET", "PRESSBYRÅN", "RESQ CLUB", "GRILLEN", "ESPRESSO", "KROG", "CAFE", "CIRCLE K", "PREEM", "MAX", "KOND", "HEMKÖP", "FALAFEL", "PIGEONSTREET" };
-                    categorization(titleRow, emptyRow, mat);
+                var mat = new List<string>() { "COOP", "NETT", "ICA", "WILLYS", "LIDL", "SELECTA", "PIZZ", "PIZ", "VISUALISERIN", "ENOTEKET", "PRESSBYRÅN", "RESQ CLUB", "GRILLEN", "ESPRESSO", "KROG", "CAFE", "CIRCLE K", "PREEM", "MAX", "KOND", "HEMKÖP", "FALAFEL", "PIGEONSTREET" };
+                categorization(titleRow, mat);
 
-                    var sprit = new List<string>() { "SYSTEM", "SALIGA", "ARBIS", "CROMWELL", "LERO", "VÄRDENS", "KARHUSET", "BROOKLYN", "TRÄDGÅR", "LION", "WATTS", "S 12", "O LEARYS", "BAR", "SOFO", "SKANETRAFIKE", "HUSET UNDER", "SODERKELLARE", "BROADWAY", "RESTAURANG K" };
-                    categorization(titleRow, emptyRow, sprit);
+                var sprit = new List<string>() { "SYSTEM", "SALIGA", "ARBIS", "CROMWELL", "LERO", "VÄRDENS", "KARHUSET", "BROOKLYN", "TRÄDGÅR", "LION", "WATTS", "S 12", "O LEARYS", "BAR", "SOFO", "SKANETRAFIKE", "HUSET UNDER", "SODERKELLARE", "BROADWAY", "RESTAURANG K" };
+                categorization(titleRow, sprit);
 
-                    var swish = new List<string>() { "56940769587" };
-                    categorization(titleRow, emptyRow, swish);
+                var swish = new List<string>() { "467" };
+                categorization(titleRow, swish);
 
-                    var resor = new List<string>() { "ÖSTG", "SNELLTAGET", "SJ INTERNETB", "TAXI", "SJ MOB" };
-                    categorization(titleRow, emptyRow, resor);
+                var resor = new List<string>() { "ÖSTG", "SNELLTAGET", "SJ INTERNETB", "TAXI", "SJ MOB" };
+                categorization(titleRow, resor);
 
-                    // we dont need to insert rows from category 'others' because they are already in source table 
-                    titleRow = tempDataTable.NewRow();
-                    titleRow[0] = c.Other.title;
-                    tempDataTable.Rows.InsertAt(titleRow, tempDataTable.Rows.Count);
+                // we dont need to insert rows from category 'others' because they are already in source table 
+                titleRow = tempDataTable.NewRow();
+                titleRow[0] = c.Other.title;
+                tempDataTable.Rows.InsertAt(titleRow, tempDataTable.Rows.Count);
                     
-                    // sumerize category others
-                    foreach (DataRow row in monthSet.Tables[0].Rows)
-                    {
-                        categoryList.items[7].sum += Convert.ToInt32(row[2]);
-                    }
+                // sumerize category others
+                foreach (DataRow row in monthSet.Tables[0].Rows)
+                {
+                    categoryList.items[7].sum += Convert.ToInt32(row[2]);
+                }
 
-                    monthSet.Tables[0].AcceptChanges();
+                monthSet.Tables[0].AcceptChanges();
 
-                    int rowIndex = 0;
-                    // insert categorized tabel from tempDataTable to monthSet table
-                    foreach (DataRow row in tempDataTable.Rows)
-                    {
-                        DataRow newRow = monthSet.Tables[0].NewRow();
-                        newRow[0] = row[0];
-                        newRow[1] = row[1];
-                        newRow[2] = row[2];
-                        monthSet.Tables[0].Rows.InsertAt(newRow, rowIndex);
+                int rowIndex = 0;
+                // insert categorized tabel from tempDataTable to monthSet table
+                foreach (DataRow row in tempDataTable.Rows)
+                {
+                    DataRow newRow = monthSet.Tables[0].NewRow();
+                    newRow[0] = row[0];
+                    newRow[1] = row[1];
+                    newRow[2] = row[2];
+                    monthSet.Tables[0].Rows.InsertAt(newRow, rowIndex);
 
-                        rowIndex++;
-                    }
+                    rowIndex++;
+                }
 
-                    //Addning 3 new columns to the right
-                    monthSet.Tables[0].Columns[0].ColumnName = "Rubrik";
-                    monthSet.Tables[0].Columns.Add("", typeof(System.Int32));
-                    monthSet.Tables[0].Columns.Add("Kategorier", typeof(System.String));
-                    monthSet.Tables[0].Columns.Add("Summa", typeof(System.Int32));
+                addSumerizedCategories(monthSet, yearSet);
 
-                    //Assaigning title and sums in the summarize columns
-                    monthSet.Tables[0].Rows[0][4] = categoryList.items[0].title;
-                    monthSet.Tables[0].Rows[0][5] = categoryList.items[0].sum;
-                    monthSet.Tables[0].Rows[1][4] = categoryList.items[1].title;
-                    monthSet.Tables[0].Rows[1][5] = categoryList.items[1].sum;
-                    monthSet.Tables[0].Rows[2][4] = categoryList.items[2].title;
-                    monthSet.Tables[0].Rows[2][5] = categoryList.items[2].sum;
-                    monthSet.Tables[0].Rows[3][4] = categoryList.items[3].title;
-                    monthSet.Tables[0].Rows[3][5] = categoryList.items[3].sum;
-                    monthSet.Tables[0].Rows[4][4] = categoryList.items[4].title;
-                    monthSet.Tables[0].Rows[4][5] = categoryList.items[4].sum;
-                    monthSet.Tables[0].Rows[5][4] = categoryList.items[5].title;
-                    monthSet.Tables[0].Rows[5][5] = categoryList.items[5].sum;
-                    monthSet.Tables[0].Rows[6][4] = categoryList.items[6].title;
-                    monthSet.Tables[0].Rows[6][5] = categoryList.items[6].sum;
-                    monthSet.Tables[0].Rows[7][4] = categoryList.items[7].title;
-                    monthSet.Tables[0].Rows[7][5] = categoryList.items[7].sum;
-                    
-                    // sumerize all categories for the entire month 
-                    int categorySums = 0;
-                    foreach (DataRow row in monthSet.Tables[0].Rows)
-                    {
-                        if(row[5] != DBNull.Value)
-                        {
-                            categorySums += Convert.ToInt32(row[5]);
-                        }
-                    }
-                    monthSet.Tables[0].Rows[8][4] = "Summa: ";
-                    monthSet.Tables[0].Rows[8][5] = categorySums;
+                readerMonth.Close();
+                readerYear.Close();
+                
+            }
+        }
 
-                    // read data from google sheets and assign it to 
-                    readGoogleSheet(monthSet);
+        private void addSumerizedCategories(DataSet monthSet, DataSet yearSet)
+        {
+            //Addning 3 new columns to the right
+            if(monthIndex > 9)
+            {
+                monthSet.Tables[0].Columns[0].ColumnName = "Rubrik";
+                monthSet.Tables[0].Columns[4].ColumnName = "Kategori";
+                monthSet.Tables[0].Columns.Add("Summa", typeof(System.String));
+            }
+            else
+            {
+                monthSet.Tables[0].Columns[0].ColumnName = "Rubrik";
+                monthSet.Tables[0].Columns.Add("", typeof(System.String));
+                //monthSet.Tables[0].Columns.Add("", typeof(System.String));
+                monthSet.Tables[0].Columns.Add("Kategori", typeof(System.String));
+                monthSet.Tables[0].Columns.Add("Summa", typeof(System.String));
+            }
 
-                    // replace month table in year file
-                    yearSet.Tables[monthIndex].Clear();
-                    yearSet.Tables[monthIndex].Columns.RemoveAt(0);
-                    yearSet.Tables[monthIndex].Columns.RemoveAt(0);
-                    yearSet.Tables[monthIndex].Columns.RemoveAt(0);
-                    yearSet.Tables[monthIndex].Columns.RemoveAt(0);
-                    yearSet.Tables[monthIndex].Columns.RemoveAt(0);
-                    yearSet.Tables[monthIndex].Columns.RemoveAt(0);
+            //Assaigning title and sums in the summarize columns
+            monthSet.Tables[0].Rows[0][4] = categoryList.items[0].title;
+            monthSet.Tables[0].Rows[0][5] = categoryList.items[0].sum;
+            monthSet.Tables[0].Rows[1][4] = categoryList.items[1].title;
+            monthSet.Tables[0].Rows[1][5] = categoryList.items[1].sum;
+            monthSet.Tables[0].Rows[2][4] = categoryList.items[2].title;
+            monthSet.Tables[0].Rows[2][5] = categoryList.items[2].sum;
+            monthSet.Tables[0].Rows[3][4] = categoryList.items[3].title;
+            monthSet.Tables[0].Rows[3][5] = categoryList.items[3].sum;
+            monthSet.Tables[0].Rows[4][4] = categoryList.items[4].title;
+            monthSet.Tables[0].Rows[4][5] = categoryList.items[4].sum;
+            monthSet.Tables[0].Rows[5][4] = categoryList.items[5].title;
+            monthSet.Tables[0].Rows[5][5] = categoryList.items[5].sum;
+            monthSet.Tables[0].Rows[6][4] = categoryList.items[6].title;
+            monthSet.Tables[0].Rows[6][5] = categoryList.items[6].sum;
+            monthSet.Tables[0].Rows[7][4] = categoryList.items[7].title;
+            monthSet.Tables[0].Rows[7][5] = categoryList.items[7].sum;
 
-                    // coppy data from month table to year data set
-                    DataTableReader reader = new DataTableReader(monthSet.Tables[0]);
-                    yearSet.Tables[monthIndex].Load(reader);
-
-                    sumerizeMonth();
-
-                    writeToGoogleSheet(yearSet.Tables[monthIndex]);
-                    monthIndex = 12;
-                    writeToGoogleSheet(yearSet.Tables[monthIndex]);
-
-                    //tempDataTable = monthSet.Tables[0];
-
-                    foreach (DataTable dataTable in yearSet.Tables)
-                    {
-                        cboSheet.Items.Add(dataTable.TableName);
-                    }
-
-                    readerMonth.Close();
-                    readerYear.Close();
+            // sumerize all categories for the entire month 
+            int categorySums = 0;
+            foreach (DataRow row in monthSet.Tables[0].Rows)
+            {
+                if (row[5] != DBNull.Value)
+                {
+                    categorySums += Convert.ToInt32(row[5]);
                 }
             }
+            monthSet.Tables[0].Rows[8][4] = "Summa: ";
+            monthSet.Tables[0].Rows[8][5] = categorySums;
+
+            // read data from google sheets and assign it to 
+            readGoogleSheet();
+
+            // replace month table in year file
+            yearSet.Tables[monthIndex].Clear();
+            yearSet.Tables[monthIndex].Columns.RemoveAt(0);
+            yearSet.Tables[monthIndex].Columns.RemoveAt(0);
+            yearSet.Tables[monthIndex].Columns.RemoveAt(0);
+            yearSet.Tables[monthIndex].Columns.RemoveAt(0);
+            yearSet.Tables[monthIndex].Columns.RemoveAt(0);
+            yearSet.Tables[monthIndex].Columns.RemoveAt(0);
+
+            // coppy data from month table to year data set
+            DataTableReader reader = new DataTableReader(monthSet.Tables[0]);
+            yearSet.Tables[monthIndex].Load(reader);
+
+            sumerizeMonth();
+
+            writeToGoogleSheet(yearSet.Tables[monthIndex]);
+            monthIndex = 12;
+            writeToGoogleSheet(yearSet.Tables[monthIndex]);
+
+            //tempDataTable = monthSet.Tables[0];
+
+            foreach (DataTable dataTable in yearSet.Tables)
+            {
+                cboSheet.Items.Add(dataTable.TableName);
+            }
+
+            
         }
 
         private void CboSheet_SelectedIndexChanged(object sender, EventArgs e)
@@ -313,7 +321,7 @@ namespace SortXLSX
             categoryList.items[categoryIndex].sum = categorySum;
         }
 
-        private void categorization(DataRow titleRow, DataRow emptyRow, List<string> Category)
+        private void categorization(DataRow titleRow, List<string> Category)
         {
             // adding header
             titleRow = tempDataTable.NewRow();
@@ -325,7 +333,8 @@ namespace SortXLSX
                 search_description(categoryStr);
             }
 
-            // adding space
+            // adding new line
+            DataRow emptyRow = tempDataTable.NewRow();
             emptyRow = tempDataTable.NewRow();
             tempDataTable.Rows.InsertAt(emptyRow, tempDataTable.Rows.Count);
             // reset the categorySum for the new category
@@ -353,7 +362,7 @@ namespace SortXLSX
             }
         }
 
-        private void readGoogleSheet(DataSet ds)
+        private void readGoogleSheet()
         {
             // Define request parameters.
             List<string> ranges = new List<string>();
@@ -373,16 +382,36 @@ namespace SortXLSX
 
             Data.BatchGetValuesResponse response = request.Execute();
 
+            string columnName = "";
+
             for (int month = 0; month < response.ValueRanges.Count; month++)
             {
+                // we read the 6 first columns from a month set from google sheet
                 for (int i = 0; i < 6; i++)
                 {
-                        var columnSpec = new DataColumn
-                        {
-                            DataType = typeof(string),
-                            ColumnName = "Database Name" + month + " " + i
-                        };
-                        yearSet.Tables[month].Columns.Add(columnSpec);
+                    switch (i)
+                    {
+                        case 0:
+                            columnName = "Rubrik";
+                            break;
+                        case 4:
+                            columnName = "Kategori";
+                            break;
+                        case 5:
+                            columnName = "Summa";
+                            break;
+                        default:
+                            columnName = "";
+                            break;
+                    }
+
+                    var columnSpec = new DataColumn
+                    {
+                        DataType = typeof(string),
+                        ColumnName = columnName
+                    };
+
+                    yearSet.Tables[month].Columns.Add(columnSpec);
                 }
 
                 if (response.ValueRanges[month].Values != null && response.ValueRanges[month].Values.Count > 0)
@@ -452,7 +481,7 @@ namespace SortXLSX
                 yearSet.Tables[12].Rows.Add(newRow);
             }
 
-            for (int i = 0; i < yearSet.Tables.Count-1; i++)
+            for (int i = 0; i < monthIndex+1; i++)
             {
                 if (yearSet.Tables[i].Rows.Count > 0)
                 {
@@ -460,8 +489,9 @@ namespace SortXLSX
 
                     yearSet.Tables[12].Rows[i][0] = monthStrings[i];
                     yearSet.Tables[12].Rows[i][1] = yearSet.Tables[i].Rows[8][5];
-                    avgMonthTotal += Convert.ToInt32(yearSet.Tables[12].Rows[i][1]);
 
+                    avgMonthTotal += Convert.ToInt32(yearSet.Tables[12].Rows[i][1]);
+                    
                     // adding other avrage for category other
                     categoryList.items[0].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[0][5]);
                     categoryList.items[1].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[1][5]);
@@ -478,7 +508,6 @@ namespace SortXLSX
 
             for (int i = 0; i < categoryList.items.Count; i++)
             {
-                Console.WriteLine("i: " + i);
                 yearSet.Tables[12].Rows[i][3] = categoryList.items[i].title;
                 yearSet.Tables[12].Rows[i][4] = (int)(categoryList.items[i].annualSum / completedMonths);
             }
@@ -492,29 +521,3 @@ namespace SortXLSX
     }
 }
 
-public class Category
-{
-    public Item Hyra = new Item { title = "Hyra", sum = 0.0 };
-    public Item Bredband = new Item { title = "Bredband/Modil", sum = 0 };
-    public Item Manadsutgifter = new Item { title = "Månadsutgifter", sum = 0 };
-    public Item Swish = new Item { title = "Swish", sum = 0 };
-    public Item Mat = new Item { title = "Mat", sum = 0 };
-    public Item Sprit = new Item { title = "Sprit", sum = 0 };
-    public Item Resor = new Item { title = "Resor", sum = 0 };
-    public Item Other = new Item { title = "Övrigt", sum = 0 };
-    public Item Snus = new Item { title = "Snus", sum = 0 };
-
-
-}
-
-public class Item
-{
-    public string title { get; set; }
-    public double sum { get; set; }
-    public double annualSum { get; set; }
-}
-
-public class RootObject
-{
-    public List<Item> items { get; set; }
-}
