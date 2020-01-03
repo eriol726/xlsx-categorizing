@@ -20,6 +20,7 @@ namespace SortXLSX
         {
             SpreadsheetInfo.SetLicense("FREE-LIMITED-KEY");
             InitializeComponent();
+
         }
         /*
          * Download the xml file from SEB containing all the data from one month
@@ -29,17 +30,33 @@ namespace SortXLSX
 
         DataSet monthSet, yearSet;
         public static DataTable tempDataTable;
-        RootObject categoryList = new RootObject();
-        Category c = new Category();
+        //Category categoryList = new Category().items;
+
+        List<CategoryItem> categoryItems = new List<CategoryItem>{
+                            new CategoryItem { title = "Hyra", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Bredband/Mobil", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Basutgifter", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Mat", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Sprit", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Swish", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Resor", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Kläder", sum = 0, annualSum = 0 },
+                            new CategoryItem { title = "Övrigt", sum = 0, annualSum = 0 }
+                        };
+
+
         int categorySum = 0;
+        int categoryItemsLength = 0;
         int categoryIndex = 0;
-        int monthIndex = 10;
+        int monthIndex = 11;
         string spreadsheetId = ConfigurationManager.AppSettings["spreadsheetId"];
         string[] monthStrings = {"Januari", "Februari", "Mars", "April", "Maj", "Juni", "Juli", "Augusti", "September", "Oktober", "November", "December", "Summering" };
         public SpreadsheetsResource.ValuesResource.GetRequest request1;
 
         private void BtnOpen_Click(object sender, EventArgs e)
         {
+            categoryItemsLength = categoryItems.Count+1;
+
             using (OpenFileDialog ofd = new OpenFileDialog() { Filter = "Excel Workbook|*.xlsx", ValidateNames = true })
             {
 
@@ -143,17 +160,6 @@ namespace SortXLSX
                 //important to reorder table when we delete
                 monthSet.Tables[0].AcceptChanges();
 
-                categoryList.items = new List<CategoryItem>
-                        {
-                            new CategoryItem { title = "Hyra", sum = 0, annualSum = 0 },
-                            new CategoryItem { title = "Bredband/Mobil", sum = 0, annualSum = 0 },
-                            new CategoryItem { title = "Basutgifter", sum = 0, annualSum = 0 },
-                            new CategoryItem { title = "Mat", sum = 0, annualSum = 0 },
-                            new CategoryItem { title = "Sprit", sum = 0, annualSum = 0 },
-                            new CategoryItem { title = "Swish", sum = 0, annualSum = 0 },
-                            new CategoryItem { title = "Resor", sum = 0, annualSum = 0 },
-                            new CategoryItem { title = "Övrigt", sum = 0, annualSum = 0 }
-                        };
 
                 // sumerize induvidual caregory
                 monthSet.Tables[0].AcceptChanges();
@@ -162,35 +168,38 @@ namespace SortXLSX
                 DataRow titleRow = tempDataTable.NewRow();
 
                 var hyra = new List<string>() { "HYRES" };
-                categorization(titleRow, hyra);
+                categorization(hyra);
 
                 var bredband = new List<string>() { "TELEN", "COMV" };
-                categorization(titleRow, bredband);
+                categorization(bredband);
 
-                var basutgifter = new List<string>() { "DFS", "SPOTIFY", "AEA", "SVEGOT", "WORLDCLASS", "ENKLA VARDAG", "CSN", "EON ", "E ON" };
-                categorization(titleRow, basutgifter);
+                var basutgifter = new List<string>() { "DFS", "SPOTIFY", "AEA", "SVEGOT", "WORLDCLASS", "ENKLA VARDAG", "CSN", "EON ", "E ON", "DINA FÖRSÄ" };
+                categorization(basutgifter);
 
-                var mat = new List<string>() { "COOP", "NETT", "ICA", "WILLYS", "LIDL", "SELECTA", "PIZZ", "PIZ", "VISUALISERIN", "ENOTEKET", "PRESSBYRÅN", "RESQ CLUB", "GRILLEN", "ESPRESSO", "KROG", "CAFE", "CIRCLE K", "PREEM", "MAX", "KOND", "HEMKÖP", "FALAFEL", "PIGEONSTREET" };
-                categorization(titleRow, mat);
+                var mat = new List<string>() { "COOP", "NETT", "ICA", "WILLYS", "LIDL", "SELECTA", "PIZZ", "PIZ", "VISUALISERIN", "ENOTEKET", "PRESSBYRÅN", "RESQ CLUB", "GRILLEN", "ESPRESSO", "RESTAURANG", "KROG", "CAFE", "CIRCLE K", "PREEM", "MAX", "KOND", "HEMKÖP", "FALAFEL", "PIGEONSTREET" };
+                categorization(mat);
 
-                var sprit = new List<string>() { "SYSTEM", "SALIGA", "ARBIS", "CROMWELL", "LERO", "VÄRDENS", "KARHUSET", "BROOKLYN", "TRÄDGÅR", "LION", "WATTS", "S 12", "O LEARYS", "BAR", "SOFO", "SKANETRAFIKE", "HUSET UNDER", "SODERKELLARE", "BROADWAY", "RESTAURANG K" };
-                categorization(titleRow, sprit);
+                var sprit = new List<string>() { "SYSTEM", "SALIGA", "ARBIS", "CROMWELL", "LERO", "VÄRDENS", "KARHUSET", "BROOKLYN", "TRÄDGÅR", "LION", "WATTS", "S 12", "O LEARYS", "BAR", "SOFO", "SKANETRAFIKE", "HUSET UNDER", "SODERKELLARE", "BROADWAY", "RESTAURANG K", "BORGEN" };
+                categorization(sprit);
 
                 var swish = new List<string>() { "467" };
-                categorization(titleRow, swish);
+                categorization(swish);
 
-                var resor = new List<string>() { "ÖSTG", "SNELLTAGET", "SJ INTERNETB", "TAXI", "SJ MOB" };
-                categorization(titleRow, resor);
+                var resor = new List<string>() { "ÖSTG", "SNELLTAGET", "SJ INTERNETB", "TAXI", "SJ MOB", "SJ AB" };
+                categorization(resor);
+
+                var klader = new List<string>() { "BROTHERS", "MQ", "DRESSMAN INTERNETB", "SELLPY", "HM" };
+                categorization(klader);
 
                 // we dont need to insert rows from category 'others' because they are already in source table 
                 titleRow = tempDataTable.NewRow();
-                titleRow[0] = c.Other.title;
+                titleRow[0] = categoryItems[categoryItems.Count-1].title;
                 tempDataTable.Rows.InsertAt(titleRow, tempDataTable.Rows.Count);
                     
                 // sumerize category others
                 foreach (DataRow row in monthSet.Tables[0].Rows)
                 {
-                    categoryList.items[7].sum += Convert.ToInt32(row[2]);
+                    categoryItems[categoryItems.Count-1].sum += Convert.ToInt32(row[2]);
                 }
 
                 monthSet.Tables[0].AcceptChanges();
@@ -229,28 +238,29 @@ namespace SortXLSX
             {
                 monthSet.Tables[0].Columns[0].ColumnName = "Rubrik";
                 monthSet.Tables[0].Columns.Add("", typeof(System.String));
-                //monthSet.Tables[0].Columns.Add("", typeof(System.String));
                 monthSet.Tables[0].Columns.Add("Kategori", typeof(System.String));
                 monthSet.Tables[0].Columns.Add("Summa", typeof(System.String));
             }
 
             //Assaigning title and sums in the summarize columns
-            monthSet.Tables[0].Rows[0][4] = categoryList.items[0].title;
-            monthSet.Tables[0].Rows[0][5] = categoryList.items[0].sum;
-            monthSet.Tables[0].Rows[1][4] = categoryList.items[1].title;
-            monthSet.Tables[0].Rows[1][5] = categoryList.items[1].sum;
-            monthSet.Tables[0].Rows[2][4] = categoryList.items[2].title;
-            monthSet.Tables[0].Rows[2][5] = categoryList.items[2].sum;
-            monthSet.Tables[0].Rows[3][4] = categoryList.items[3].title;
-            monthSet.Tables[0].Rows[3][5] = categoryList.items[3].sum;
-            monthSet.Tables[0].Rows[4][4] = categoryList.items[4].title;
-            monthSet.Tables[0].Rows[4][5] = categoryList.items[4].sum;
-            monthSet.Tables[0].Rows[5][4] = categoryList.items[5].title;
-            monthSet.Tables[0].Rows[5][5] = categoryList.items[5].sum;
-            monthSet.Tables[0].Rows[6][4] = categoryList.items[6].title;
-            monthSet.Tables[0].Rows[6][5] = categoryList.items[6].sum;
-            monthSet.Tables[0].Rows[7][4] = categoryList.items[7].title;
-            monthSet.Tables[0].Rows[7][5] = categoryList.items[7].sum;
+            monthSet.Tables[0].Rows[0][4] = categoryItems[0].title;
+            monthSet.Tables[0].Rows[0][5] = categoryItems[0].sum;
+            monthSet.Tables[0].Rows[1][4] = categoryItems[1].title;
+            monthSet.Tables[0].Rows[1][5] = categoryItems[1].sum;
+            monthSet.Tables[0].Rows[2][4] = categoryItems[2].title;
+            monthSet.Tables[0].Rows[2][5] = categoryItems[2].sum;
+            monthSet.Tables[0].Rows[3][4] = categoryItems[3].title;
+            monthSet.Tables[0].Rows[3][5] = categoryItems[3].sum;
+            monthSet.Tables[0].Rows[4][4] = categoryItems[4].title;
+            monthSet.Tables[0].Rows[4][5] = categoryItems[4].sum;
+            monthSet.Tables[0].Rows[5][4] = categoryItems[5].title;
+            monthSet.Tables[0].Rows[5][5] = categoryItems[5].sum;
+            monthSet.Tables[0].Rows[6][4] = categoryItems[6].title;
+            monthSet.Tables[0].Rows[6][5] = categoryItems[6].sum;
+            monthSet.Tables[0].Rows[7][4] = categoryItems[7].title;
+            monthSet.Tables[0].Rows[7][5] = categoryItems[7].sum;
+            monthSet.Tables[0].Rows[8][4] = categoryItems[8].title;
+            monthSet.Tables[0].Rows[8][5] = categoryItems[8].sum;
 
             // sumerize all categories for the entire month 
             int categorySums = 0;
@@ -261,8 +271,8 @@ namespace SortXLSX
                     categorySums += Convert.ToInt32(row[5]);
                 }
             }
-            monthSet.Tables[0].Rows[8][4] = "Summa: ";
-            monthSet.Tables[0].Rows[8][5] = categorySums;
+            monthSet.Tables[0].Rows[categoryItems.Count + 1][4] = "Summa: ";
+            monthSet.Tables[0].Rows[categoryItems.Count + 1][5] = categorySums;
 
             // read data from google sheets and assign it to 
             readGoogleSheet();
@@ -318,14 +328,14 @@ namespace SortXLSX
             }
 
             monthSet.Tables[0].AcceptChanges();
-            categoryList.items[categoryIndex].sum = categorySum;
+            categoryItems[categoryIndex].sum = categorySum;
         }
 
-        private void categorization(DataRow titleRow, List<string> Category)
+        private void categorization(List<string> Category)
         {
             // adding header
-            titleRow = tempDataTable.NewRow();
-            titleRow[0] = categoryList.items[categoryIndex].title;
+            DataRow titleRow = tempDataTable.NewRow();
+            titleRow[0] = categoryItems[categoryIndex].title;
             tempDataTable.Rows.InsertAt(titleRow, tempDataTable.Rows.Count);
 
             foreach (String categoryStr in Category)
@@ -456,6 +466,7 @@ namespace SortXLSX
             ValueRange vr = new ValueRange();
             vr.Values = googleDataRows;
             vr.Range = monthStrings[monthIndex];
+
             data.Add(vr);
     
             requestBody.Data = data;
@@ -488,32 +499,33 @@ namespace SortXLSX
                     DataRow newRow = yearSet.Tables[12].NewRow();
 
                     yearSet.Tables[12].Rows[i][0] = monthStrings[i];
-                    yearSet.Tables[12].Rows[i][1] = yearSet.Tables[i].Rows[8][5];
+                    yearSet.Tables[12].Rows[i][1] = yearSet.Tables[i].Rows[categoryItems.Count+1][5];
 
                     avgMonthTotal += Convert.ToInt32(yearSet.Tables[12].Rows[i][1]);
-                    
+
                     // adding other avrage for category other
-                    categoryList.items[0].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[0][5]);
-                    categoryList.items[1].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[1][5]);
-                    categoryList.items[2].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[2][5]);
-                    categoryList.items[3].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[3][5]);
-                    categoryList.items[4].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[4][5]);
-                    categoryList.items[5].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[5][5]);
-                    categoryList.items[6].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[6][5]);
-                    categoryList.items[7].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[7][5]);
+                    categoryItems[0].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[0][5]);
+                    categoryItems[1].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[1][5]);
+                    categoryItems[2].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[2][5]);
+                    categoryItems[3].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[3][5]);
+                    categoryItems[4].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[4][5]);
+                    categoryItems[5].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[5][5]);
+                    categoryItems[6].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[6][5]);
+                    categoryItems[7].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[7][5]);
+                    categoryItems[8].annualSum += Convert.ToDouble(yearSet.Tables[i].Rows[8][5]);
 
                     completedMonths++;
                 }
             }
 
-            for (int i = 0; i < categoryList.items.Count; i++)
+            for (int i = 0; i < categoryItems.Count; i++)
             {
-                yearSet.Tables[12].Rows[i][3] = categoryList.items[i].title;
-                yearSet.Tables[12].Rows[i][4] = (int)(categoryList.items[i].annualSum / completedMonths);
+                yearSet.Tables[12].Rows[i][3] = categoryItems[i].title;
+                yearSet.Tables[12].Rows[i][4] = (int)(categoryItems[i].annualSum / completedMonths);
             }
 
-            yearSet.Tables[12].Rows[9][3] = "Genomsnitt månad";
-            yearSet.Tables[12].Rows[9][4] = avgMonthTotal / completedMonths;
+            yearSet.Tables[12].Rows[categoryItems.Count+1][3] = "Genomsnitt månad";
+            yearSet.Tables[12].Rows[categoryItems.Count+1][4] = avgMonthTotal / completedMonths;
 
 
 
