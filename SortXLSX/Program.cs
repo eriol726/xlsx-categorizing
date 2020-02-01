@@ -60,39 +60,18 @@ namespace SortXLSX
             //UploadBasicImage("C:/Users/Erik/Pictures/lost_warning.jpg", service);
 
             string pageToken = null;
-
+            string fileId = "";
             do
             {
-                ListFiles(service, ref pageToken);
+                fileId = ListFiles(service, ref pageToken);
             } while (pageToken != null);
 
             SpreadsheetService = sheetService;
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            Application.Run(new Form1(fileId));
         
             Console.Read();
-        }
-
-        private static void UploadBasicImage(string path, DriveService service)
-        {
-            var fileMetadata = new Google.Apis.Drive.v3.Data.File();
-            fileMetadata.Name = Path.GetFileName(path);
-
-
-            fileMetadata.MimeType = "image/jpeg";
-            FilesResource.CreateMediaUpload request;
-            using (var stream = new System.IO.FileStream(path, System.IO.FileMode.Open))
-            {
-                request = service.Files.Create(fileMetadata, stream, "image/jpeg");
-                request.Fields = "id";
-                request.Upload();
-            }
-
-            var file = request.ResponseBody;
-
-            Console.WriteLine("File ID: " + file.Id);
-
         }
 
         private static UserCredential GetCredentials()
@@ -134,15 +113,14 @@ namespace SortXLSX
             {
                 foreach (var file in files)
                 {
-                    
-                    if (file.Name.Contains("Ekonomi 2019"))
+
+                    if (file.Name.Equals("Ekonomi_2020"))
                     {
                         foundIndex = index;
-                        Console.WriteLine("{0}", file.Id);
                         fileId = file.Id;
                     }
+                    index++;
                 }
-                index++;
             }
             else
             {
@@ -152,79 +130,6 @@ namespace SortXLSX
 
             string currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             return fileId;
-
-
-        }
-        private static void DownloadFile(DriveService service, Google.Apis.Drive.v3.Data.File file, string saveTo)
-        {
-            Console.WriteLine("file: " + file.Id);
-            //var request = service.Files.Get(file.Id);
-            var stream = new System.IO.MemoryStream();
-
-            Console.WriteLine("file.mimic: " + file.MimeType);
-            var request = service.Files.Export(file.Id, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-
-            // Add a handler which will be notified on progress changes.
-            // It will notify on each chunk download and when the
-            // download is completed or failed.
-            request.MediaDownloader.ProgressChanged += (IDownloadProgress progress) =>
-            {
-                switch (progress.Status)
-                {
-                    case DownloadStatus.Downloading:
-                        {
-                            Console.WriteLine(progress.BytesDownloaded);
-                            break;
-                        }
-                    case DownloadStatus.Completed:
-                        {
-                            Console.WriteLine("Download complete.");
-                            SaveStream(stream, saveTo, service, file);
-                            break;
-                        }
-                    case DownloadStatus.Failed:
-                        {
-                            Console.WriteLine("Download failed.");
-                            if (file.ExportLinks.Any())
-                                SaveStream(new System.Net.Http.HttpClient().GetStreamAsync(file.ExportLinks.FirstOrDefault().Value).Result, saveTo + @"/" +"file" );
-                            
-                            break;
-                        }
-                }
-            };
-            try
-            {
-                request.Download(stream);
-            }
-            catch (Exception ex)
-
-            {
-                Console.Write("Error: " + ex.Message);
-            }
-        }
-
-        private static void SaveStream(Stream result, string v)
-        {
-            throw new NotImplementedException();
-        }
-
-        private static void SaveStream(System.IO.MemoryStream stream, string saveTo, DriveService service, Google.Apis.Drive.v3.Data.File _fileResource)
-        {
-            System.IO.File.SetAttributes(saveTo, FileAttributes.Normal);
-
-            string fullName = Path.Combine(saveTo, "Ekonomi_2019_downloaded.xlsx");
-
-            using (System.IO.FileStream file = new System.IO.FileStream(fullName, System.IO.FileMode.Create))
-            {
-                //var x = service.HttpClient.GetByteArrayAsync(_fileResource.);
-                //byte[] arrBytes = x.Result;
-                //System.IO.File.WriteAllBytes(saveTo, arrBytes);
-                stream.WriteTo(file);
-            }
-        }
-        private void BtnOpen_Click(object sender, EventArgs e)
-        {
-            
         }
 
     }

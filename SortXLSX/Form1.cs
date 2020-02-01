@@ -16,11 +16,12 @@ namespace SortXLSX
 
     public partial class Form1 : Form
     {
-        public Form1()
+        private string fileId = "";
+        public Form1(string FileId)
         {
             SpreadsheetInfo.SetLicense("FREE-LIMITED-KEY");
             InitializeComponent();
-
+            fileId = FileId;
         }
         /*
          * Download the xml file from SEB containing all the data from one month
@@ -44,11 +45,11 @@ namespace SortXLSX
                             new CategoryItem { title = "Övrigt", sum = 0, annualSum = 0 }
                         };
 
-
+        
         int categorySum = 0;
         int categoryItemsLength = 0;
         int categoryIndex = 0;
-        int monthIndex = 11;
+        int monthIndex = 0;
         string spreadsheetId = ConfigurationManager.AppSettings["spreadsheetId"];
         string[] monthStrings = {"Januari", "Februari", "Mars", "April", "Maj", "Juni", "Juli", "Augusti", "September", "Oktober", "November", "December", "Summering" };
         public SpreadsheetsResource.ValuesResource.GetRequest request1;
@@ -60,8 +61,8 @@ namespace SortXLSX
             using (OpenFileDialog ofd = new OpenFileDialog() { Filter = "Excel Workbook|*.xlsx", ValidateNames = true })
             {
 
-                FileStream fsYear = File.Open("Ekonomi_2019_downloaded.xlsx", FileMode.Open, FileAccess.Read);
-                FileStream fsMonth = File.Open("Seb_"+monthStrings[monthIndex]+".xlsx", FileMode.Open, FileAccess.Read);
+                FileStream fsYear = File.Open("Ekonomi_base_sheets.xlsx", FileMode.Open, FileAccess.Read);
+                FileStream fsMonth = File.Open("seb_"+monthStrings[monthIndex]+"_2020.xlsx", FileMode.Open, FileAccess.Read);
                 IExcelDataReader readerYear, readerMonth;
                     
                 if (ofd.FilterIndex == 1)
@@ -139,7 +140,7 @@ namespace SortXLSX
                         row.Delete();
                     }
                     //radera alla rader som inte börjar med ett datum
-                    else if(!year.ToString().Contains("2019") )
+                    else if(!year.ToString().Contains("2020") )
                     {
                         row.Delete();
                     }
@@ -312,14 +313,14 @@ namespace SortXLSX
         }
 
         // Find a category name in month table, add it to tempDataTable, sumerize the amounts, delete the row from the month table 
-        private void search_description(string title)
+        private void search_description(string categoryStr)
         {
             
             foreach (DataRow row in monthSet.Tables[0].Rows)
             {
                 string description = row[1].ToString();
 
-                if (description.Contains(title) )
+                if (description.Contains(categoryStr) )
                 {
                     tempDataTable.Rows.Add(row.ItemArray);
                     categorySum += Convert.ToInt32(row[2]);
@@ -333,19 +334,19 @@ namespace SortXLSX
 
         private void categorization(List<string> Category)
         {
-            // adding header
+            // adding header title
             DataRow titleRow = tempDataTable.NewRow();
             titleRow[0] = categoryItems[categoryIndex].title;
             tempDataTable.Rows.InsertAt(titleRow, tempDataTable.Rows.Count);
 
             foreach (String categoryStr in Category)
             {
+                // adding the outgoings
                 search_description(categoryStr);
             }
 
-            // adding new line
+            // adding epty new line to make som space
             DataRow emptyRow = tempDataTable.NewRow();
-            emptyRow = tempDataTable.NewRow();
             tempDataTable.Rows.InsertAt(emptyRow, tempDataTable.Rows.Count);
             // reset the categorySum for the new category
             categorySum = 0;
@@ -382,9 +383,11 @@ namespace SortXLSX
                 ranges.Add(monthString);
             }
 
+            
             // choose input format between 0: FORMATED_VALUE, 1: UNFORMATED_VALUE and 2: FORMULA
             SpreadsheetsResource.ValuesResource.BatchGetRequest.ValueRenderOptionEnum valueRenderOption = (SpreadsheetsResource.ValuesResource.BatchGetRequest.ValueRenderOptionEnum)1;
             SpreadsheetsResource.ValuesResource.BatchGetRequest.DateTimeRenderOptionEnum dateTimeRenderOption = (SpreadsheetsResource.ValuesResource.BatchGetRequest.DateTimeRenderOptionEnum)0;
+            // Alternative use fileId from constructor param here
             SpreadsheetsResource.ValuesResource.BatchGetRequest request = Program.SpreadsheetService.Spreadsheets.Values.BatchGet(spreadsheetId);
             request.Ranges = ranges;
             request.ValueRenderOption = valueRenderOption;
