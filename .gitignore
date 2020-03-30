@@ -7,7 +7,7 @@ secret_keys.txt
 SortXLSX/bin/Debug
 SortXLSX/credentials.json
 
-App.config
+SortXLSX/App.config
 
 # User-specific files
 *.rsuser
